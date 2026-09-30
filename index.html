@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1420">
+<title>Papírový bot · MarketTrace</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%230f1420'/%3E%3Ccircle cx='24' cy='27' r='4' fill='%2338d39f'/%3E%3Ccircle cx='40' cy='27' r='4' fill='%2338d39f'/%3E%3Crect x='18' y='38' width='28' height='5' rx='2.5' fill='%2338d39f'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f1420;--panel:#171d2b;--panel2:#1d2534;--line:#28313f;--ink:#e9edf5;--muted:#8a94a6;--up:#38d39f;--down:#f0626b;--accent:#6f8dff;color-scheme:dark}
+@media (prefers-color-scheme: light){:root{--bg:#f4f5f8;--panel:#fff;--panel2:#f7f8fb;--line:#e0e4ec;--ink:#151a24;--muted:#677082;--up:#12844d;--down:#c8313a;--accent:#2e51d6;color-scheme:light}}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 Manrope,system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:max(16px,env(safe-area-inset-top)) 16px 40px}
+main{max-width:900px;margin:0 auto}
+h1{font-size:26px;letter-spacing:-.03em;margin:0 0 4px}
+.sub{color:var(--muted);font-size:14px;margin:0 0 18px}
+.tag{display:inline-block;background:rgba(111,141,255,.16);color:var(--accent);font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px;margin-bottom:10px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+.card span{display:block;font-size:12px;color:var(--muted);font-weight:600}
+.card b{font-size:22px;letter-spacing:-.02em}
+h2{font-size:17px;margin:22px 0 10px}
+table{width:100%;border-collapse:collapse;font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);text-align:right;padding:10px;border-bottom:1px solid var(--line)}
+td{padding:11px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+tr:last-child td{border-bottom:0}
+.up{color:var(--up)}.down{color:var(--down)}
+.why{color:var(--muted);font-size:12px;white-space:normal}
+.empty{background:var(--panel);border:1px dashed var(--line);border-radius:14px;padding:20px;color:var(--muted);text-align:center}
+.note{color:var(--muted);font-size:12px;margin-top:22px;line-height:1.5}
+.rule{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:14px;font-size:13px;color:var(--muted)}
+.rule b{color:var(--ink)}
+@media(max-width:560px){td .why{display:block;max-width:190px}}
+</style>
+</head>
+<body>
+<main>
+  <div class="tag">PAPÍROVÝ ÚČET · ŽÁDNÉ SKUTEČNÉ PENÍZE</div>
+  <h1>Bot podle nákupů insiderů</h1>
+  <p class="sub" id="sub">Načítám…</p>
+  <div class="cards" id="cards"></div>
+  <div class="rule" id="rule"></div>
+  <h2>Otevřené pozice</h2>
+  <div id="open"></div>
+  <h2>Uzavřené obchody</h2>
+  <div id="closed"></div>
+  <p class="note">Bot kupuje po nákupech členů vedení firem z hlášení SEC (Form 4) a drží 90 dní. Běží na papírovém účtu Alpaca, adresa papírového rozhraní je v kódu natvrdo. Výsledky nejsou investičním doporučením a minulá výkonnost nezaručuje budoucí.</p>
+</main>
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const nf = (v,d=2) => v==null||isNaN(v) ? '—' : new Intl.NumberFormat('cs-CZ',{minimumFractionDigits:d,maximumFractionDigits:d}).format(v);
+const usd = v => v==null||isNaN(v) ? '—' : nf(v, Math.abs(v)>=100?0:2)+' $';
+const pct = v => v==null||isNaN(v) ? '—' : (v>0?'+':'')+nf(v,1)+' %';
+const cls = v => v>0?'up':v<0?'down':'';
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const den = d => d ? new Date(d).toLocaleDateString('cs-CZ') : '—';
+const days = d => d ? Math.floor((Date.now()-new Date(d))/864e5) : null;
+
+fetch('state/summary.json?v='+Math.floor(Date.now()/60000)).then(r=>r.ok?r.json():null).then(s=>{
+  if(!s){ $('#sub').textContent='Bot zatím neodeslal žádný stav. První běh proběhne v nejbližší obchodní hodině.'; return; }
+  const total = s.start_equity ? (s.equity/s.start_equity-1)*100 : null;
+  $('#sub').textContent = `Stav k ${new Date(s.updated).toLocaleString('cs-CZ')}`;
+  $('#cards').innerHTML = `
+    <div class="card"><span>Hodnota účtu</span><b>${usd(s.equity)}</b></div>
+    <div class="card"><span>Celkem od startu</span><b class="${cls(total)}">${pct(total)}</b></div>
+    <div class="card"><span>Otevřených pozic</span><b>${(s.open||[]).length}</b></div>
+    <div class="card"><span>Uzavřeno obchodů</span><b>${s.stats?.trades ?? 0}</b></div>
+    <div class="card"><span>Úspěšnost</span><b>${s.stats?.win_rate==null?'—':nf(s.stats.win_rate,0)+' %'}</b></div>
+    <div class="card"><span>Průměr na obchod</span><b class="${cls(s.stats?.avg_pl)}">${pct(s.stats?.avg_pl)}</b></div>`;
+  const r = s.rule||{};
+  $('#rule').innerHTML = `Pravidlo: nákup člena vedení nad <b>${usd(r.min_value)}</b>, pozice <b>${r.position_pct} %</b> účtu, nejvýš <b>${r.max_positions}</b> pozic, držení <b>${r.hold_days} dní</b>, bez stop-lossu.`;
+  $('#open').innerHTML = (s.open||[]).length ? `<table><thead><tr><th>Titul</th><th>Nákup</th><th>Cena</th><th>Zisk</th><th>Drženo</th></tr></thead><tbody>${
+    s.open.sort((a,b)=>b.pl_pct-a.pl_pct).map(p=>`<tr><td><b>${esc(p.t)}</b>${p.reason?`<span class="why">${esc(p.reason)}</span>`:''}</td><td>${usd(p.entry)}</td><td>${usd(p.price)}</td><td class="${cls(p.pl_pct)}">${pct(p.pl_pct)}</td><td>${days(p.opened)??'—'} dní</td></tr>`).join('')}</tbody></table>`
+    : '<div class="empty">Zatím žádná otevřená pozice.</div>';
+  $('#closed').innerHTML = (s.closed||[]).length ? `<table><thead><tr><th>Titul</th><th>Od</th><th>Do</th><th>Výsledek</th></tr></thead><tbody>${
+    s.closed.slice().reverse().map(h=>`<tr><td><b>${esc(h.t)}</b></td><td>${den(h.opened)}</td><td>${den(h.closed)}</td><td class="${cls(h.pl_pct)}">${pct(h.pl_pct)}</td></tr>`).join('')}</tbody></table>`
+    : '<div class="empty">Zatím žádný uzavřený obchod. První se uzavřou po 90 dnech držení.</div>';
+}).catch(()=>{ $('#sub').textContent='Stav se nepodařilo načíst.'; });
+})();
+</script>
+</body>
+</html>

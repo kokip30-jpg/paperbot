@@ -1,0 +1,58 @@
+name: Papírový bot
+
+on:
+  schedule:
+    - cron: '35 14,17,19 * * 1-5'   # během obchodování v USA
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: paperbot
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Načíst stav
+        run: |
+          if git fetch -q --depth=1 origin state; then
+            rm -rf state && git archive FETCH_HEAD state | tar -x
+          fi
+          mkdir -p state
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Spustit bota
+        env:
+          ALPACA_KEY: ${{ secrets.ALPACA_KEY }}
+          ALPACA_SECRET: ${{ secrets.ALPACA_SECRET }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python scripts/bot.py
+      - name: Uložit stav
+        env:
+          TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          tmp=$(mktemp -d); cp -r state "$tmp/"; cd "$tmp"
+          git init -q -b state; git add state
+          git -c user.name="paperbot" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -q -m "Stav $(date -u +'%Y-%m-%d %H:%M') UTC"
+          git push -q -f "https://x-access-token:${TOKEN}@github.com/${REPO}.git" state
+      - run: mkdir -p site && cp index.html site/ && cp -r state site/state
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4

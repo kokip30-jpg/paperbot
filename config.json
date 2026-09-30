@@ -1,0 +1,15 @@
+{
+  "mode": "paper",
+  "source": "https://raw.githubusercontent.com/kokip30-jpg/markettrace/data/data/feed-buys.json",
+  "rule": {
+    "only_executives": true,
+    "min_value": 100000,
+    "min_price": 3,
+    "max_filing_age_days": 5,
+    "hold_days": 90,
+    "position_pct": 2,
+    "max_positions": 25,
+    "max_new_per_day": 3,
+    "skip_tickers": []
+  }
+}
