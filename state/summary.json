@@ -1,0 +1,83 @@
+{
+ "updated": "2026-10-06T21:51:02.936375+00:00",
+ "equity": 100972.92,
+ "cash": -44785.89,
+ "start_equity": 99626.21,
+ "open": [
+  {
+   "t": "BMNR",
+   "qty": 1000.0,
+   "entry": 26.73,
+   "price": 26.3208,
+   "pl_pct": -1.53,
+   "opened": null,
+   "reason": null
+  },
+  {
+   "t": "GME",
+   "qty": 79.546672077,
+   "entry": 24.64,
+   "price": 24.75,
+   "pl_pct": 0.45,
+   "opened": "2026-09-30T17:45:30.808145+00:00",
+   "reason": "Cohen Ryan (President  CEO and Chairman) koupil za 10 563 796 $"
+  },
+  {
+   "t": "INBX",
+   "qty": 19.246170463,
+   "entry": 101.84,
+   "price": 93.41,
+   "pl_pct": -8.28,
+   "opened": "2026-09-30T17:45:30.808145+00:00",
+   "reason": "Lappe Mark (Chief Executive Officer) koupil za 998 784 $"
+  },
+  {
+   "t": "QQQ",
+   "qty": 100.0,
+   "entry": 742.34,
+   "price": 760.19,
+   "pl_pct": 2.4,
+   "opened": null,
+   "reason": null
+  },
+  {
+   "t": "RKLB",
+   "qty": 500.0,
+   "entry": 71.67,
+   "price": 75.33,
+   "pl_pct": 5.11,
+   "opened": null,
+   "reason": null
+  },
+  {
+   "t": "SWZ",
+   "qty": 342.662587412,
+   "entry": 5.72,
+   "price": 5.8,
+   "pl_pct": 1.4,
+   "opened": "2026-09-30T17:45:30.808145+00:00",
+   "reason": "Dakos Andrew (President and CEO) koupil za 115 814 $"
+  }
+ ],
+ "closed": [],
+ "stats": {
+  "trades": 0,
+  "win_rate": null,
+  "avg_pl": null
+ },
+ "rule": {
+  "only_executives": true,
+  "min_value": 100000,
+  "min_price": 3,
+  "max_filing_age_days": 5,
+  "hold_days": 90,
+  "position_pct": 2,
+  "max_positions": 25,
+  "max_new_per_day": 3,
+  "skip_tickers": []
+ },
+ "log": [
+  "burza je zavřená, jen kontrola stavu",
+  "účet ACTIVE · hodnota 100 973 $ · pozic 6"
+ ]
+}
